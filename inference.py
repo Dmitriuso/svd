@@ -32,7 +32,7 @@ class TranslationInference:
         self.device = device
 
     def inference(self, sentence):
-        self.model.eval()
+        model.eval()
 
         if isinstance(sentence, str):
             nlp = spacy.load('de_core_news_sm')
@@ -40,37 +40,38 @@ class TranslationInference:
         else:
             tokens = [token.lower() for token in sentence]
 
-        tokens = [self.src_field.init_token] + tokens + [self.src_field.eos_token]
+        tokens = [src_field.init_token] + tokens + [src_field.eos_token]
 
-        src_indexes = [self.src_field.vocab.stoi[token] for token in tokens]
-        src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(self.device)
+        src_indexes = [src_field.vocab.stoi[token] for token in tokens]
 
-        src_mask = self.model.make_src_mask(src_tensor)
+        src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
+
+        src_mask = model.make_src_mask(src_tensor)
 
         with torch.no_grad():
-            enc_src = self.model.encoder(src_tensor, src_mask)
+            enc_src = model.encoder(src_tensor, src_mask)
 
-        trg_indexes = [self.trg_field.vocab.stoi[self.trg_field.init_token]]
+        trg_indexes = [trg_field.vocab.stoi[trg_field.init_token]]
 
-        for i in range(self.max_len):
+        for i in range(max_len):
 
-            trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(self.device)
+            trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
 
-            trg_mask = self.model.make_trg_mask(trg_tensor)
+            trg_mask = model.make_trg_mask(trg_tensor)
 
             with torch.no_grad():
-                output = self.model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
+                output, attention = model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
 
             pred_token = output.argmax(2)[:,-1].item()
 
             trg_indexes.append(pred_token)
 
-            if pred_token == self.trg_field.vocab.stoi[self.trg_field.eos_token]:
+            if pred_token == trg_field.vocab.stoi[trg_field.eos_token]:
                 break
 
-        trg_tokens = [self.trg_field.vocab.itos[i] for i in trg_indexes]
+        trg_tokens = [trg_field.vocab.itos[i] for i in trg_indexes]
 
-        return trg_tokens[1:]
+        return trg_tokens[1:], attention
 
 
 def translate():
