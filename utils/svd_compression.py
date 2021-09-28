@@ -44,3 +44,15 @@ print(f'first transformed B matrix:\n {T}')
 T = A.dot(VT.T)
 
 print(f'second transformed B matrix:\n {T}')
+
+
+def svd_compress(A, n_elements):
+    U, s, VT = svd(A)
+    Sigma = zeros((A.shape[0], A.shape[1]))
+    # create m x n Sigma matrix
+    Sigma = zeros((A.shape[0], A.shape[1]))
+    # populate Sigma with n x n diagonal matrix
+    Sigma[:A.shape[0], :A.shape[0]] = diag(s)
+    Sigma = Sigma[:, :n_elements]
+    VT = VT[:n_elements, :]
+    return VT

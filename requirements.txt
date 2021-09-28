@@ -5,6 +5,7 @@ torchtext
 transformers
 tensorboard
 matplotlib
+scipy
 spacy==3.0
 pkbar
 wandb
