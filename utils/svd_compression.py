@@ -1,6 +1,5 @@
-from numpy import array
-from numpy import diag
-from numpy import zeros
+import torch
+from numpy import array, ones, zeros, diag
 from scipy.linalg import svd
 
 # define a matrix
@@ -22,7 +21,7 @@ Sigma = zeros((A.shape[0], A.shape[1]))
 # populate Sigma with n x n diagonal matrix
 Sigma[:A.shape[0], :A.shape[0]] = diag(s)
 
-print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma}')
+print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
 
 # select
 n_elements = 2
@@ -46,13 +45,26 @@ T = A.dot(VT.T)
 print(f'second transformed B matrix:\n {T}')
 
 
-def svd_compress(A, n_elements):
+def svd_compress(A):
     U, s, VT = svd(A)
     Sigma = zeros((A.shape[0], A.shape[1]))
     # create m x n Sigma matrix
     Sigma = zeros((A.shape[0], A.shape[1]))
     # populate Sigma with n x n diagonal matrix
     Sigma[:A.shape[0], :A.shape[0]] = diag(s)
+    n_elements = int(s.shape[0])
     Sigma = Sigma[:, :n_elements]
     VT = VT[:n_elements, :]
-    return VT
+    # reconstruct
+    B = U.dot(Sigma.dot(VT))
+    # transform
+    T = U.dot(Sigma)
+    T = A.dot(VT.T)
+    return T
+
+D = ones((128, 17, 256))
+
+
+if __name__ == '__main__':
+    print('*'*50)
+    print(f'checking the SVD compression function:\n {svd_compress(D).shape}')
