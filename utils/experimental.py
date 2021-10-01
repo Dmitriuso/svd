@@ -31,5 +31,5 @@ if __name__ == '__main__':
     print('*'*50)
     print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
     print('*'*50)
-    print(f'the SVD of a low-rank matrix A:\n {[i.shape for i in svd_lowrank(A)]}')
+    print(f'the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}')
 

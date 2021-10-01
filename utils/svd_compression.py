@@ -1,5 +1,5 @@
 import torch
-from numpy import array, ones, zeros, diag
+from numpy import array, ones, zeros, diag, transpose
 from scipy.linalg import svd
 
 # define a matrix
@@ -21,16 +21,19 @@ Sigma = zeros((A.shape[0], A.shape[1]))
 # populate Sigma with n x n diagonal matrix
 Sigma[:A.shape[0], :A.shape[0]] = diag(s)
 
-print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
+print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma}')
+print('*'*150)
 
 # select
 n_elements = 2
 Sigma = Sigma[:, :n_elements]
 print(f'∑ matrix with n elements selected:\n {Sigma}')
+print('*'*150)
 
 VT = VT[:n_elements, :]
 
 print(f'3rd SVD matrix with n elements selected:\n {VT}')
+print('*'*150)
 
 # reconstruct
 B = U.dot(Sigma.dot(VT))
@@ -61,6 +64,13 @@ def svd_compress(A):
     T = U.dot(Sigma)
     T = A.dot(VT.T)
     return T
+
+def vital_svd_compress(A):
+    U, s, VT = svd(A)
+    P = transpose(A).dot(U)
+    print(P.shape)
+    return P
+
 
 D = ones((128, 17, 256))
 
