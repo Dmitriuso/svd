@@ -50,6 +50,7 @@ print(f'second transformed B matrix:\n {T}')
 
 def svd_compress(A):
     U, s, VT = svd(A)
+    print(f'VT first shape: {VT.shape}')
     Sigma = zeros((A.shape[0], A.shape[1]))
     # create m x n Sigma matrix
     Sigma = zeros((A.shape[0], A.shape[1]))
@@ -58,12 +59,18 @@ def svd_compress(A):
     n_elements = int(s.shape[0])
     Sigma = Sigma[:, :n_elements]
     VT = VT[:n_elements, :]
+    print(f'VT second shape: {VT.shape}')
     # reconstruct
     B = U.dot(Sigma.dot(VT))
     # transform
     T = U.dot(Sigma)
-    T = A.dot(VT.T)
-    return T
+    print(f'T matrix shape: {T.shape}')
+    VTT = VT.T
+    print(f'VTT shape: {VTT.shape}')
+    Z = A.dot(VTT)
+    print(f'Z shape: {Z.shape}')
+    return Z
+
 
 def vital_svd_compress(A):
     U, s, VT = svd(A)
@@ -76,5 +83,6 @@ D = ones((128, 17, 256))
 
 
 if __name__ == '__main__':
-    print('*'*50)
-    print(f'checking the SVD compression function:\n {svd_compress(D).shape}')
+    # print('*'*50)
+    # print(f'checking the SVD compression function:\n {svd_compress(D).shape}')
+    svd_compress(A)

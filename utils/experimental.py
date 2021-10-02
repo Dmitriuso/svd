@@ -1,13 +1,13 @@
-from torch import ones, zeros, diag, svd_lowrank
+from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose
 from torch.linalg import svd
 import torch.nn as nn
 from svd_compression import svd_compress
 
 # define a matrix
-A = zeros(128, 17, 256)
+A = zeros(17, 256)
 print(A.shape)
 
-U, s, VT = svd_lowrank(A, q=17)
+U, s, VT = svd(A)
 
 # create m x n Sigma matrix
 Sigma = zeros(A.shape[0], A.shape[1])
@@ -17,19 +17,52 @@ Sigma[:A.shape[0], :A.shape[0]] = diag(s)
 
 svdlr = svd_lowrank(A, q=2)
 
-for i in A:
-    print(i.shape)
-    B = i.cpu().data.numpy()
-    compressed = svd_compress(B)
-    print(compressed.shape)
+# for i in A:
+#     print(i.shape)
+#     B = i.cpu().data.numpy()
+#     compressed = svd_compress(B)
+#     print(compressed.shape)
+
+# TODO make low_rank bigger than seq len
+# TODO iterate through tensor and append the result to a new tensor
+
+def torch_svd_compress(A):
+    U, s, VT = svd(A)
+    print(f'U matrix shape: {U.shape}')
+    print(f'VT first shape: {VT.shape}')
+    Sigma = zeros((A.shape[0], A.shape[1]))
+    # create m x n Sigma matrix
+    Sigma = zeros((A.shape[0], A.shape[1]))
+    print(f'Sigma matrix first shape: {Sigma.shape}')
+    # populate Sigma with n x n diagonal matrix
+    Sigma[:A.shape[0], :A.shape[0]] = diag(s)
+    n_elements = int(s.shape[0])
+    Sigma = Sigma[:, :n_elements]
+    print(f'Sigma matrix second shape: {Sigma.shape}')
+    VT = VT[:n_elements, :]
+    print(f'VT second shape: {VT.shape}')
+    # reconstruct
+    C = mm(Sigma, VT)
+    B = mm(U, C)
+    # transform
+    T = mm(U, Sigma)
+    print(f'T matrix shape: {T.shape}')
+    VTT = transpose(VT, 0, 1)
+    print(f'VTT shape: {VTT.shape}')
+    Z = mm(A, VTT)
+    return Z
 
 
 if __name__ == '__main__':
-    print(f'the input matrix:\n {A.shape}')
-    print('*'*50)
+    # print(f'the input matrix:\n {A.shape}')
+    # print('*'*50)
     print(f'the SVD matrices:\nU: {U.shape}\ns:{s.shape}\nVT: {VT.shape}')
     print('*'*50)
-    print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
+    # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
+    # print('*'*50)
+    # print(f'the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}')
+    # print('*'*50)
+    print(f'the shape of the torch-compressed matrix A: {torch_svd_compress(A).shape}')
     print('*'*50)
-    print(f'the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}')
+    print(f'the torch-reconstructed matrix Â:\n {torch_svd_compress(A)}')
 
