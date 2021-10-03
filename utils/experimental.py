@@ -1,10 +1,10 @@
-from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose
+from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose, tensor, stack
 from torch.linalg import svd
 import torch.nn as nn
 from svd_compression import svd_compress
 
 # define a matrix
-A = zeros(17, 256)
+A = zeros(128, 17, 256)
 print(A.shape)
 
 U, s, VT = svd(A)
@@ -24,7 +24,6 @@ svdlr = svd_lowrank(A, q=2)
 #     print(compressed.shape)
 
 # TODO make low_rank bigger than seq len
-# TODO iterate through tensor and append the result to a new tensor
 
 def torch_svd_compress(A):
     U, s, VT = svd(A)
@@ -42,8 +41,8 @@ def torch_svd_compress(A):
     VT = VT[:n_elements, :]
     print(f'VT second shape: {VT.shape}')
     # reconstruct
-    C = mm(Sigma, VT)
-    B = mm(U, C)
+    # C = mm(Sigma, VT)
+    # B = mm(U, C)
     # transform
     T = mm(U, Sigma)
     print(f'T matrix shape: {T.shape}')
@@ -52,17 +51,32 @@ def torch_svd_compress(A):
     Z = mm(A, VTT)
     return Z
 
+tensor_list = []
+
+for i in A:
+    print(f'i shape: {i.shape}')
+    print(f'i type: {type(i)}')
+    # B = tensor(i)
+    torch_compressed = torch_svd_compress(i)
+    print(f'shape of torch-compressed matrix: {torch_compressed.shape}')
+    print(f'type of torch-compressed matrix: {type(torch_compressed)}')
+    tensor_list.append(torch_compressed)
+
+
+K = stack(tensor_list)
+print(f'shape of torch-compressed tensor: {K.shape}')
+
 
 if __name__ == '__main__':
-    # print(f'the input matrix:\n {A.shape}')
+    print(f'the input matrix:\n {A.shape}')
     # print('*'*50)
-    print(f'the SVD matrices:\nU: {U.shape}\ns:{s.shape}\nVT: {VT.shape}')
-    print('*'*50)
+    # print(f'the SVD matrices:\nU: {U.shape}\ns:{s.shape}\nVT: {VT.shape}')
+    # print('*'*50)
     # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
     # print('*'*50)
     # print(f'the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}')
     # print('*'*50)
-    print(f'the shape of the torch-compressed matrix A: {torch_svd_compress(A).shape}')
-    print('*'*50)
-    print(f'the torch-reconstructed matrix Â:\n {torch_svd_compress(A)}')
+    # print(f'the shape of the torch-compressed matrix A: {torch_svd_compress(A).shape}')
+    # print('*'*50)
+    # print(f'the torch-reconstructed matrix Â:\n {torch_svd_compress(A)}')
 

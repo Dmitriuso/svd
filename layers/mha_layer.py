@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
+from layers.tensor_svd_compression import SVD_compress
 
 
 class MultiHeadAttentionLayer(nn.Module):
@@ -31,13 +31,32 @@ class MultiHeadAttentionLayer(nn.Module):
         #key = [batch size, key len, hid dim]
         #value = [batch size, value len, hid dim]
 
+
         Q = self.fc_q(query)
         K = self.fc_k(key)
         V = self.fc_v(value)
 
+        # print(f'Q shape: {Q.shape}')
+        # print(f'K shape: {K.shape}')
+        # print(f'V shape: {V.shape}')
+
         #Q = [batch size, query len, hid dim]
         #K = [batch size, key len, hid dim]
         #V = [batch size, value len, hid dim]
+
+        ### EXPERIMENTAL SVD COMPRESSION
+
+        # compressed_q = SVD_compress(Q).iter_and_stack()
+        # compressed_k = SVD_compress(K).iter_and_stack()
+        # compressed_v = SVD_compress(V).iter_and_stack()
+        #
+        # print(f'compressed query shape: {compressed_q.shape}')
+        # print(f'compressed key shape: {compressed_k.shape}')
+        # print(f'compressed value shape: {compressed_v.shape}')
+
+        # compressed_query = [batch size, query len, hid dim] ; query len = hid dim
+        # compressed_key = [batch size, key len, hid dim] ; key len = hid dim
+        # compressed_value = [batch size, value len, hid dim] ; value len = hid dim
 
         Q = Q.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
         K = K.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
@@ -58,7 +77,7 @@ class MultiHeadAttentionLayer(nn.Module):
 
         # print(f'tensor after mask (energy): {energy.shape}')
 
-        attention = torch.softmax(energy, dim = -1)
+        attention = torch.softmax(energy, dim=-1)
 
         #attention = [batch size, n heads, query len, key len]
 
