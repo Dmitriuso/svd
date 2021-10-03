@@ -71,7 +71,7 @@ class TranslationInference:
 
         trg_tokens = [self.trg_field.vocab.itos[i] for i in trg_indexes]
 
-        return trg_tokens[1:], attention
+        return trg_tokens[1:]
 
 
 def translate():
