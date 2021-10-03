@@ -9,3 +9,4 @@ scipy
 spacy==3.0
 pkbar
 wandb
+nystrom-attention
