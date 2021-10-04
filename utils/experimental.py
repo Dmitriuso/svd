@@ -3,7 +3,7 @@ from torch.linalg import svd
 import torch.nn as nn
 
 # define a matrix
-M = zeros(128, 17, 256)
+M = zeros(128, 1024, 256)
 permuted = M.permute(0, 2, 1)
 
 
@@ -21,6 +21,7 @@ def torch_svd_compress(A):
     print(f'def input shape: {A.shape}')
     U, s, VT = svd(A)
     print(f'U matrix shape: {U.shape}')
+    print(f's matrix shape: {s.shape}')
     print(f'VT first shape: {VT.shape}')
     Sigma = zeros((A.shape[0], A.shape[1]))
     # create m x n Sigma matrix
@@ -46,7 +47,7 @@ def torch_svd_compress(A):
 
 tensor_list = []
 
-for i in M:
+for i in permuted:
     print(f'i shape: {i.shape}')
     print(f'i type: {type(i)}')
     # B = tensor(i)
