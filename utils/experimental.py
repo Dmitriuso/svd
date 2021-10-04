@@ -1,21 +1,13 @@
-from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose, tensor, stack
+from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose, tensor, stack, permute
 from torch.linalg import svd
 import torch.nn as nn
-from svd_compression import svd_compress
 
 # define a matrix
-A = zeros(128, 17, 256)
-print(A.shape)
+M = zeros(128, 17, 256)
+permuted = M.permute(0, 2, 1)
 
-U, s, VT = svd(A)
 
-# create m x n Sigma matrix
-Sigma = zeros(A.shape[0], A.shape[1])
-
-# populate Sigma with n x n diagonal matrix
-Sigma[:A.shape[0], :A.shape[0]] = diag(s)
-
-svdlr = svd_lowrank(A, q=2)
+svdlr = svd_lowrank(M, q=2)
 
 # for i in A:
 #     print(i.shape)
@@ -26,6 +18,7 @@ svdlr = svd_lowrank(A, q=2)
 # TODO make low_rank bigger than seq len
 
 def torch_svd_compress(A):
+    print(f'def input shape: {A.shape}')
     U, s, VT = svd(A)
     print(f'U matrix shape: {U.shape}')
     print(f'VT first shape: {VT.shape}')
@@ -53,7 +46,7 @@ def torch_svd_compress(A):
 
 tensor_list = []
 
-for i in A:
+for i in M:
     print(f'i shape: {i.shape}')
     print(f'i type: {type(i)}')
     # B = tensor(i)
@@ -68,8 +61,10 @@ print(f'shape of torch-compressed tensor: {K.shape}')
 
 
 if __name__ == '__main__':
-    print(f'the input matrix:\n {A.shape}')
-    # print('*'*50)
+    print(f'A matrix shape:\n {M.shape}')
+    print('*'*50)
+    print(f'permuted matrix shape:\n {permuted.shape}')
+    print('*'*50)
     # print(f'the SVD matrices:\nU: {U.shape}\ns:{s.shape}\nVT: {VT.shape}')
     # print('*'*50)
     # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
