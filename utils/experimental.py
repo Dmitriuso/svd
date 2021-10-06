@@ -1,9 +1,16 @@
+import torch
 from torch import ones, zeros, diag, svd_lowrank, mm, dot, transpose, tensor, stack, permute
 from torch.linalg import svd
 import torch.nn as nn
 
 # define a matrix
 M = zeros(60, 256)
+
+A = tensor([
+    [1,2,3,4,5,6,7,8,9,10],
+    [11,12,13,14,15,16,17,18,19,20],
+    [21,22,23,24,25,26,27,28,29,30]
+], dtype=torch.float32)
 # permuted = M.permute(0, 2, 1)
 
 
@@ -37,8 +44,8 @@ def torch_svd_compress(A):
     # C = mm(Sigma, VT)
     # B = mm(U, C)
     # transform
-    T = mm(U, Sigma)
-    print(f'T matrix shape: {T.shape}')
+    # T = mm(U, Sigma)
+    # print(f'T matrix shape: {T.shape}')
     VTT = transpose(VT, 0, 1)
     print(f'VTT shape: {VTT.shape}')
     Z = mm(A, VTT)
@@ -73,6 +80,21 @@ def torch_svd_low_rank_compress(A, q):
     return Z
 
 
+def torch_svd_reconstruct(A, B):
+    U, s, VT = svd(A)
+    # create m x n Sigma matrix
+    Sigma = zeros((A.shape[0], A.shape[1]))
+    # populate Sigma with n x n diagonal matrix
+    Sigma[:A.shape[0], :A.shape[0]] = diag(s)
+    n_elements = int(s.shape[0])
+    Sigma = Sigma[:, :n_elements]
+    VT = VT[:n_elements, :]
+    # reconstruct
+    C = mm(Sigma, VT)
+    B = mm(U, C)
+    return B
+
+
 tensor_list = []
 
 # for i in permuted:
@@ -102,5 +124,6 @@ if __name__ == '__main__':
     # print('*'*50)
     # print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 50).shape}')
     print('*'*50)
-    print(f'the torch compressed matrix M:\n {torch_svd_compress(M).shape}')
-
+    print(f'the torch compressed matrix M:\n {torch_svd_compress(A).shape}')
+    print('*'*50)
+    print(f'the reconstructed after compression matrix A:\n {torch_svd_reconstruct(A)}')

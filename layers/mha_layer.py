@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from layers.tensor_svd_compression import SVD_compress
+from layers.tensor_svd_compression import torch_svd_compress
 
 
 class MultiHeadAttentionLayer(nn.Module):
@@ -46,9 +46,9 @@ class MultiHeadAttentionLayer(nn.Module):
 
         ### EXPERIMENTAL SVD COMPRESSION
 
-        # compressed_q = SVD_compress(Q).iter_and_stack()
-        # compressed_k = SVD_compress(K).iter_and_stack()
-        # compressed_v = SVD_compress(V).iter_and_stack()
+        # compressed_q = torch_svd_compress(Q)
+        # compressed_k = torch_svd_compress(K)
+        # compressed_v = torch_svd_compress(V)
         #
         # print(f'compressed query shape: {compressed_q.shape}')
         # print(f'compressed key shape: {compressed_k.shape}')
@@ -76,6 +76,17 @@ class MultiHeadAttentionLayer(nn.Module):
             energy = energy.masked_fill(mask == 0, -1e10)
 
         # print(f'tensor after mask (energy): {energy.shape}')
+
+        ### EXPERIMENTAL SVD BEFORE SOFTMAX
+
+        # new_energy = []
+        # for batch in energy:
+        #     new_batch = torch_svd_compress(batch)
+        #     new_energy.append(new_batch)
+        #
+        # energy = torch.stack(new_energy)
+        #
+        # print(f'compressed energy shape: {energy.shape}')
 
         attention = torch.softmax(energy, dim=-1)
 
