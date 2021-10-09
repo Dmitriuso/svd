@@ -1,26 +1,24 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-import torchtext
-from torchtext.legacy.datasets import Multi30k
-from torchtext.legacy.data import Field, BucketIterator, TabularDataset
-from torch.utils.tensorboard import SummaryWriter
+import math
+import random
+import time
 from pathlib import Path
 
 import numpy as np
-import random
-import math
-import time
 import pkbar
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchtext
 import wandb
+from torch.utils.tensorboard import SummaryWriter
+from torchtext.legacy.data import BucketIterator, Field, TabularDataset
+from torchtext.legacy.datasets import Multi30k
 
-from encoder import Encoder
 from decoder import Decoder
-from seq2seq import Seq2Seq
-
-from utils.pre_processing import SRC, TRG, train_data, valid_data, test_data
+from encoder import Encoder
 from inference import TranslationInference
+from seq2seq import Seq2Seq
+from utils.pre_processing import SRC, TRG, test_data, train_data, valid_data
 
 work_dir = Path(__file__).parent.resolve()
 models_dir = work_dir / "models"
@@ -34,7 +32,7 @@ torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 output_model_path = models_dir / "translate_svd_de_en.pt"
 
 BATCH_SIZE = 128
@@ -44,7 +42,8 @@ train_iterator, valid_iterator, test_iterator = BucketIterator.splits(
     batch_size=BATCH_SIZE,
     sort_key=lambda x: len(x.src),
     sort_within_batch=True,
-    device=device)
+    device=device,
+)
 
 INPUT_DIM = len(SRC.vocab)
 OUTPUT_DIM = len(TRG.vocab)
@@ -58,21 +57,13 @@ DEC_PF_DIM = 512
 ENC_DROPOUT = 0.1
 DEC_DROPOUT = 0.1
 
-enc = Encoder(INPUT_DIM,
-              HID_DIM,
-              ENC_LAYERS,
-              ENC_HEADS,
-              ENC_PF_DIM,
-              ENC_DROPOUT,
-              device)
+enc = Encoder(
+    INPUT_DIM, HID_DIM, ENC_LAYERS, ENC_HEADS, ENC_PF_DIM, ENC_DROPOUT, device
+)
 
-dec = Decoder(OUTPUT_DIM,
-              HID_DIM,
-              DEC_LAYERS,
-              DEC_HEADS,
-              DEC_PF_DIM,
-              DEC_DROPOUT,
-              device)
+dec = Decoder(
+    OUTPUT_DIM, HID_DIM, DEC_LAYERS, DEC_HEADS, DEC_PF_DIM, DEC_DROPOUT, device
+)
 
 SRC_PAD_IDX = SRC.vocab.stoi[SRC.pad_token]
 TRG_PAD_IDX = TRG.vocab.stoi[TRG.pad_token]
@@ -84,11 +75,11 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-print(f'The model has {count_parameters(model):,} trainable parameters')
+print(f"The model has {count_parameters(model):,} trainable parameters")
 
 
 def initialize_weights(m):
-    if hasattr(m, 'weight') and m.weight.dim() > 1:
+    if hasattr(m, "weight") and m.weight.dim() > 1:
         nn.init.xavier_uniform_(m.weight.data)
 
 
@@ -113,18 +104,18 @@ def train(model, iterator, optimizer, criterion, clip, kbar):
 
         optimizer.zero_grad()
 
-        output, _ = model(src, trg[:,:-1])
+        output, _ = model(src, trg[:, :-1])
 
-        #output = [batch size, trg len - 1, output dim]
-        #trg = [batch size, trg len]
+        # output = [batch size, trg len - 1, output dim]
+        # trg = [batch size, trg len]
 
         output_dim = output.shape[-1]
 
         output = output.contiguous().view(-1, output_dim)
-        trg = trg[:,1:].contiguous().view(-1)
+        trg = trg[:, 1:].contiguous().view(-1)
 
-        #output = [batch size * trg len - 1, output dim]
-        #trg = [batch size * trg len - 1]
+        # output = [batch size * trg len - 1, output dim]
+        # trg = [batch size * trg len - 1]
 
         loss = criterion(output, trg)
 
@@ -154,18 +145,18 @@ def evaluate(model, iterator, criterion):
             src = batch.src
             trg = batch.trg
 
-            output, _ = model(src, trg[:,:-1])
+            output, _ = model(src, trg[:, :-1])
 
-            #output = [batch size, trg len - 1, output dim]
-            #trg = [batch size, trg len]
+            # output = [batch size, trg len - 1, output dim]
+            # trg = [batch size, trg len]
 
             output_dim = output.shape[-1]
 
             output = output.contiguous().view(-1, output_dim)
-            trg = trg[:,1:].contiguous().view(-1)
+            trg = trg[:, 1:].contiguous().view(-1)
 
-            #output = [batch size * trg len - 1, output dim]
-            #trg = [batch size * trg len - 1]
+            # output = [batch size * trg len - 1, output dim]
+            # trg = [batch size * trg len - 1]
 
             loss = criterion(output, trg)
 
@@ -185,14 +176,20 @@ def main():
     N_EPOCHS = 10
     CLIP = 1
 
-    best_valid_loss = float('inf')
+    best_valid_loss = float("inf")
     writer = SummaryWriter()
 
     for epoch in range(N_EPOCHS):
 
         start_time = time.time()
 
-        kbar = pkbar.Kbar(target=len(train_iterator), epoch=epoch, num_epochs=N_EPOCHS, width=8, always_stateful=False)
+        kbar = pkbar.Kbar(
+            target=len(train_iterator),
+            epoch=epoch,
+            num_epochs=N_EPOCHS,
+            width=8,
+            always_stateful=False,
+        )
 
         train_loss = train(model, train_iterator, optimizer, criterion, CLIP, kbar)
         valid_loss = evaluate(model, valid_iterator, criterion)
@@ -205,28 +202,32 @@ def main():
             best_valid_loss = valid_loss
             torch.save(model, output_model_path)
 
-        print(f'\n\tEpoch: {epoch + 1:02} | Time: {epoch_mins}m {epoch_secs}s')
-        print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}')
-        print(f'\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}')
-        writer.add_scalar("Train Loss", train_loss, epoch+1)
-        writer.add_scalar("Train PPL", math.exp(train_loss), epoch+1)
-        writer.add_scalar("Val. Loss", valid_loss, epoch+1)
-        writer.add_scalar("Val. PPL", math.exp(valid_loss), epoch+1)
+        print(f"\n\tEpoch: {epoch + 1:02} | Time: {epoch_mins}m {epoch_secs}s")
+        print(
+            f"\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}"
+        )
+        print(
+            f"\t Val. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}"
+        )
+        writer.add_scalar("Train Loss", train_loss, epoch + 1)
+        writer.add_scalar("Train PPL", math.exp(train_loss), epoch + 1)
+        writer.add_scalar("Val. Loss", valid_loss, epoch + 1)
+        writer.add_scalar("Val. PPL", math.exp(valid_loss), epoch + 1)
 
     model_eval = torch.load(output_model_path)
     test_loss = evaluate(model_eval, valid_iterator, criterion)
-    print(f'\n\t| Test Loss: {test_loss:.3f} | Test PPL: {math.exp(test_loss):7.3f} |')
+    print(f"\n\t| Test Loss: {test_loss:.3f} | Test PPL: {math.exp(test_loss):7.3f} |")
 
     example_idx = 5
 
-    train_src = vars(train_data.examples[example_idx])['src']
-    train_trg = vars(train_data.examples[example_idx])['trg']
+    train_src = vars(train_data.examples[example_idx])["src"]
+    train_trg = vars(train_data.examples[example_idx])["trg"]
 
-    val_src = vars(valid_data.examples[example_idx])['src']
-    val_trg = vars(valid_data.examples[example_idx])['trg']
+    val_src = vars(valid_data.examples[example_idx])["src"]
+    val_trg = vars(valid_data.examples[example_idx])["trg"]
 
-    test_src = vars(test_data.examples[example_idx])['src']
-    test_trg = vars(test_data.examples[example_idx])['trg']
+    test_src = vars(test_data.examples[example_idx])["src"]
+    test_trg = vars(test_data.examples[example_idx])["trg"]
 
     sentence = "I habe aber alles verstanden."
     translation = TranslationInference(
@@ -234,29 +235,29 @@ def main():
         src_field=SRC,
         trg_field=TRG,
         max_len=50,
-        device=device
+        device=device,
     )
 
     train_translation = translation.inference(train_src)
     val_translation = translation.inference(val_src)
     test_translation = translation.inference(test_src)
 
-    print(f'train src = {train_src}')
-    print(f'train trg = {train_trg}')
-    print(f'predicted train trg = {train_translation}')
+    print(f"train src = {train_src}")
+    print(f"train trg = {train_trg}")
+    print(f"predicted train trg = {train_translation}")
 
-    print(f'val src = {val_src}')
-    print(f'val trg = {val_trg}')
-    print(f'predicted val trg = {val_translation}')
+    print(f"val src = {val_src}")
+    print(f"val trg = {val_trg}")
+    print(f"predicted val trg = {val_translation}")
 
-    print(f'test src = {test_src}')
-    print(f'test trg = {test_trg}')
-    print(f'predicted test trg = {test_translation}')
+    print(f"test src = {test_src}")
+    print(f"test trg = {test_trg}")
+    print(f"predicted test trg = {test_translation}")
 
-    print(f'arbitrary example: {sentence}')
-    print(f'prediction: {translation.inference(sentence)}')
+    print(f"arbitrary example: {sentence}")
+    print(f"prediction: {translation.inference(sentence)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # wandb.init(project="Transformer with Nyström-approximated attention")
     main()

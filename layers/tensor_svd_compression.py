@@ -1,4 +1,4 @@
-from torch import ones, zeros, diag, svd_lowrank, mm, transpose, tensor, stack
+from torch import diag, mm, ones, stack, svd_lowrank, tensor, transpose, zeros
 from torch.linalg import svd
 
 
@@ -9,7 +9,7 @@ def torch_svd_compress(matrix):
         # create m x n Sigma matrix
         Sigma = zeros((i.shape[0], i.shape[1]))
         # populate Sigma with n x n diagonal matrix
-        Sigma[:i.shape[0], :i.shape[0]] = diag(s)
+        Sigma[: i.shape[0], : i.shape[0]] = diag(s)
         n_elements = int(s.shape[0])
         Sigma = Sigma[:, :n_elements]
         VT = VT[:n_elements, :]

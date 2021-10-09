@@ -1,19 +1,21 @@
-from typing import Iterator
-from encoder import Encoder
-from decoder import Decoder
-from torchtext.data import Field, BucketIterator
-from torchtext import data
-import random
 import math
+import random
 import time
+from typing import Iterator
+
+import dill
+import numpy as np
+import pkbar
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import numpy as np
-from utils import split_trg
+from torchtext import data
+from torchtext.data import BucketIterator, Field
+
+from decoder import Decoder
+from encoder import Encoder
 from seq2seq import Seq2Seq
-import pkbar
-import dill
-import pytorch_lightning as pl
+from utils import split_trg
 
 SEED = 1234
 
@@ -22,6 +24,7 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
+
 
 class PunctuationModel(pl.LightningModule):
     def __init__(self):
@@ -41,10 +44,6 @@ class PunctuationModel(pl.LightningModule):
         N_EPOCHS = 8
         CLIP = 1
 
-        self.enc = Encoder(INPUT_DIM, 
-                HID_DIM, 
-                ENC_LAYERS, 
-                ENC_HEADS, 
-                ENC_PF_DIM, 
-                ENC_DROPOUT, 
-                device)
+        self.enc = Encoder(
+            INPUT_DIM, HID_DIM, ENC_LAYERS, ENC_HEADS, ENC_PF_DIM, ENC_DROPOUT, device
+        )

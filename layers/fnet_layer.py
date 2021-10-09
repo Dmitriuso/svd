@@ -1,6 +1,6 @@
 import torch
-from torch.fft import fft, fftn
 from torch import nn as nn
+from torch.fft import fft, fftn
 
 
 def fourier_transform(x):

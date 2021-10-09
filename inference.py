@@ -1,13 +1,12 @@
-import numpy as np
 import random
+from pathlib import Path
+
+import numpy as np
 import spacy
 import torch
-
 import torchtext
-from torchtext.legacy.datasets import Multi30k
 from torchtext.legacy.data import Field
-
-from pathlib import Path
+from torchtext.legacy.datasets import Multi30k
 
 from utils.pre_processing import SRC, TRG
 
@@ -35,7 +34,7 @@ class TranslationInference:
         self.model.eval()
 
         if isinstance(sentence, str):
-            nlp = spacy.load('de_core_news_sm')
+            nlp = spacy.load("de_core_news_sm")
             tokens = [token.text.lower() for token in nlp(sentence)]
         else:
             tokens = [token.lower() for token in sentence]
@@ -60,9 +59,11 @@ class TranslationInference:
             trg_mask = self.model.make_trg_mask(trg_tensor)
 
             with torch.no_grad():
-                output, attention = self.model.decoder(trg_tensor, enc_src, trg_mask, src_mask)
+                output, attention = self.model.decoder(
+                    trg_tensor, enc_src, trg_mask, src_mask
+                )
 
-            pred_token = output.argmax(2)[:,-1].item()
+            pred_token = output.argmax(2)[:, -1].item()
 
             trg_indexes.append(pred_token)
 
@@ -80,15 +81,15 @@ def translate():
     model_path = models_dir / "translate_svd_de_en.pt"
     src_field = SRC
     trg_field = TRG
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     translation = TranslationInference(
         model_path=model_path,
         src_field=src_field,
         trg_field=trg_field,
         max_len=max_len,
-        device=device
+        device=device,
     )
-    print(f'prediction : {translation.inference(sentence)}')
+    print(f"prediction : {translation.inference(sentence)}")
     pass
 
 
