@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layers.tensor_svd_compression import torch_svd_compress
+from layers.tensor_svd_compression import torch_svd_compress, torch_svd_low_rank_compress
 
 
 class MultiHeadAttentionLayer(nn.Module):
@@ -36,9 +36,9 @@ class MultiHeadAttentionLayer(nn.Module):
         K = self.fc_k(key)
         V = self.fc_v(value)
 
-        # print(f'Q shape: {Q.shape}')
-        # print(f'K shape: {K.shape}')
-        # print(f'V shape: {V.shape}')
+        print(f'Q shape: {Q.shape}')
+        print(f'K shape: {K.shape}')
+        print(f'V shape: {V.shape}')
 
         # Q = [batch size, query len, hid dim]
         # K = [batch size, key len, hid dim]
@@ -46,13 +46,13 @@ class MultiHeadAttentionLayer(nn.Module):
 
         ### EXPERIMENTAL SVD COMPRESSION
 
-        # Q = torch_svd_compress(Q)
-        # K = torch_svd_compress(K)
-        # V = torch_svd_compress(V)
-        #
-        # print(f'compressed query shape: {Q.shape}')
-        # print(f'compressed key shape: {K.shape}')
-        # print(f'compressed value shape: {V.shape}')
+        Q = torch_svd_low_rank_compress(Q, 5, "cuda")
+        K = torch_svd_low_rank_compress(K, 5, "cuda")
+        V = torch_svd_low_rank_compress(V, 5, "cuda")
+
+        print(f'compressed query shape: {Q.shape}')
+        print(f'compressed key shape: {K.shape}')
+        print(f'compressed value shape: {V.shape}')
 
         # compressed_query = [batch size, query len, hid dim] ; query len = hid dim
         # compressed_key = [batch size, key len, hid dim] ; key len = hid dim

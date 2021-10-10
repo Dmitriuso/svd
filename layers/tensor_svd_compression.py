@@ -19,3 +19,22 @@ def torch_svd_compress(matrix):
         new_tensors_list.append(Z)
     K = stack(new_tensors_list)
     return K
+
+def torch_svd_low_rank_compress(A, q, device):
+    new_tensors_list = []
+    for i in A:
+        U, s, VT = svd_lowrank(i, q=q)
+        # create m x n Sigma matrix
+        Sigma = zeros((q, q)).to(device)
+        # populate Sigma with n x n diagonal matrix
+        Sigma[: q, : q] = diag(s)
+        n_elements = int(q)
+        Sigma = Sigma[:, :n_elements]
+        VT = VT[:n_elements, :]
+        # transform
+        T = mm(U, Sigma)
+        VTT = transpose(VT, 0, 1)
+        Z = mm(T, VTT)
+        new_tensors_list.append(Z)
+    K = stack(new_tensors_list)
+    return K

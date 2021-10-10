@@ -15,6 +15,7 @@ from torch.linalg import svd
 
 # define a matrix
 M = zeros(60, 256)
+C = zeros(128, 60, 256)
 
 A = tensor(
     [
@@ -72,14 +73,14 @@ def torch_svd_low_rank_compress(A, q):
     print(f"s matrix shape: {s.shape}")
     print(f"VT first shape: {VT.shape}")
     # create m x n Sigma matrix
-    Sigma = zeros((A.shape[0], A.shape[1]))
+    Sigma = zeros((q, q))
     print(f"Sigma matrix first shape: {Sigma.shape}")
     # populate Sigma with n x n diagonal matrix
-    Sigma[: A.shape[0], : A.shape[0]] = diag(s)
-    n_elements = int(s.shape[0])
+    Sigma[: q, : q] = diag(s)
+    n_elements = int(q)
     Sigma = Sigma[:, :n_elements]
     print(f"Sigma matrix second shape: {Sigma.shape}")
-    VT = VT[:n_elements, :]
+    VT2 = VT[:n_elements, :]
     print(f"VT second shape: {VT.shape}")
     # reconstruct
     # C = mm(Sigma, VT)
@@ -87,10 +88,32 @@ def torch_svd_low_rank_compress(A, q):
     # transform
     T = mm(U, Sigma)
     print(f"T matrix shape: {T.shape}")
-    VTT = transpose(VT, 0, 1)
+    VTT = transpose(VT2, 0, 1)
     print(f"VTT shape: {VTT.shape}")
-    Z = mm(A, VTT)
+    Z = mm(T, VTT)
+    print(f'torch low rank compressed matrix Z: {Z.shape}')
     return Z
+
+
+def torch_svd_low_rank_compress_3d(A, q):
+    new_tensors_list = []
+    for i in A:
+        U, s, VT = svd_lowrank(i, q=q)
+        # create m x n Sigma matrix
+        Sigma = zeros((q, q))
+        # populate Sigma with n x n diagonal matrix
+        Sigma[: q, : q] = diag(s)
+        n_elements = int(q)
+        Sigma = Sigma[:, :n_elements]
+        VT = VT[:n_elements, :]
+        # transform
+        T = mm(U, Sigma)
+        VTT = transpose(VT, 0, 1)
+        Z = mm(T, VTT)
+        print(f'Z shape: {Z.shape}')
+        new_tensors_list.append(Z)
+    K = stack(new_tensors_list)
+    return K
 
 
 def torch_svd_reconstruct(A, B):
@@ -134,9 +157,11 @@ if __name__ == "__main__":
     # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
     # print('*'*50)
     print(f"the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}")
-    # print('*'*50)
-    # print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 50).shape}')
+    print('*'*50)
+    print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 50).shape}')
     print("*" * 50)
     print(f"the torch compressed matrix M:\n {torch_svd_compress(A).shape}")
-    print("*" * 50)
-    print(f"the reconstructed after compression matrix A:\n {torch_svd_reconstruct(A)}")
+    # print("*" * 50)
+    # print(f"the reconstructed after compression matrix A:\n {torch_svd_reconstruct(A)}")
+    print("*"*50)
+    print(f'the shape of 3D tensor after low rank compression and stack back: {torch_svd_low_rank_compress_3d(C, 50).shape}')
