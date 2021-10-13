@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layers.tensor_svd_compression import torch_svd_compress, torch_svd_low_rank_compress
+from layers.tensor_svd_compression import torch_svd_compress, torch_svd_low_rank_compress, torch_svd_reconstruct
 
 
 class MultiHeadAttentionLayer(nn.Module):
@@ -47,9 +47,9 @@ class MultiHeadAttentionLayer(nn.Module):
 
         ### EXPERIMENTAL SVD COMPRESSION
 
-        Q = torch_svd_low_rank_compress(Q, 6, "cpu")
-        K = torch_svd_low_rank_compress(K, 6, "cpu")
-        V = torch_svd_low_rank_compress(V, 6, "cpu")
+        Q = torch_svd_compress(Q)
+        K = torch_svd_compress(K)
+        V = torch_svd_compress(V)
 
         print(f'compressed query shape: {Q.shape}')
         print(f'compressed key shape: {K.shape}')
@@ -75,12 +75,12 @@ class MultiHeadAttentionLayer(nn.Module):
 
         # energy = [batch size, n heads, query len, key len]
 
-        print(f'tensor before mask: {energy.shape}')
+        print(f'energy tensor before mask: {energy.shape}')
 
         if mask is not None:
             energy = energy.masked_fill(mask == 0, -1e10)
 
-        print(f'tensor after mask (energy): {energy.shape}')
+        print(f'energy tensor after mask (energy): {energy.shape}')
 
         attention = torch.softmax(energy, dim=-1)
 
@@ -90,16 +90,30 @@ class MultiHeadAttentionLayer(nn.Module):
 
         # x = [batch size, n heads, query len, head dim]
 
+        print(f'x matrix shape after matmul: {x.shape}')
+
         x = x.permute(0, 2, 1, 3).contiguous()
 
         # x = [batch size, query len, n heads, head dim]
 
-        x = x.view(batch_size, -1, self.hid_dim)
+        print(f'x matrix contiguous shape: {x.shape}')
+
+        x = x.view(batch_size, -1, 12)
 
         # x = [batch size, query len, hid dim]
+
+        print(f'x matrix shape after squeezing: {x.shape}')
+
+        x = torch_svd_reconstruct(self.fc_q(query), x, "cuda")
+
+        # x = [batch size, query len, hid dim]
+
+        print(f'x reconstructed tensor shape: {x.shape}')
 
         x = self.fc_o(x)
 
         # x = [batch size, query len, hid dim]
+
+        print(f'mha output matrix shape: {x.shape}')
 
         return x, attention

@@ -14,7 +14,7 @@ from torch import (
 from torch.linalg import svd
 
 # define a matrix
-M = zeros(60, 256)
+M = zeros(12, 256)
 C = zeros(128, 60, 256)
 
 A = tensor(
@@ -29,7 +29,7 @@ A = tensor(
 # permuted = M.permute(0, 2, 1)
 
 
-svdlr = svd_lowrank(M, q=50)
+svdlr = svd_lowrank(M, q=6)
 
 # for i in A:
 #     print(i.shape)
@@ -148,20 +148,18 @@ tensor_list = []
 
 
 if __name__ == "__main__":
-    print(f"A matrix shape:\n {M.shape}")
-    print("*" * 50)
+    # print(f"A matrix shape:\n {M.shape}")
+    # print("*" * 50)
     # print(f'permuted matrix shape:\n {permuted.shape}')
     # print('*'*50)
     # print(f'the SVD matrices:\nU: {U.shape}\ns:{s.shape}\nVT: {VT.shape}')
     # print('*'*50)
     # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
     # print('*'*50)
-    print(f"the SVD of a low-rank matrix A:\n {[i.shape for i in svdlr]}")
-    print('*'*50)
-    print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 50).shape}')
+    print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 6).shape}')
     print("*" * 50)
-    print(f"the torch compressed matrix M:\n {torch_svd_compress(A).shape}")
+    # print(f"the torch compressed matrix M:\n {torch_svd_compress(A).shape}")
     # print("*" * 50)
     # print(f"the reconstructed after compression matrix A:\n {torch_svd_reconstruct(A)}")
-    print("*"*50)
-    print(f'the shape of 3D tensor after low rank compression and stack back: {torch_svd_low_rank_compress_3d(C, 50).shape}')
+    # print("*"*50)
+    # print(f'the shape of 3D tensor after low rank compression and stack back: {torch_svd_low_rank_compress_3d(C, 50).shape}')

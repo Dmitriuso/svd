@@ -60,12 +60,12 @@ class Seq2Seq(nn.Module):
         # src_mask = [batch size, 1, 1, src len]
         # trg_mask = [batch size, 1, trg len, trg len]
 
-        enc_src = self.encoder(src, src_mask)
+        enc_src = self.encoder(src, src_mask=None)
 
         # enc_src = [batch size, src len, hid dim]
         # print(f'enc_src : {enc_src.shape}')
 
-        output, attention = self.decoder(trg, enc_src, trg_mask, src_mask)
+        output, attention = self.decoder(trg, enc_src, trg_mask=None, src_mask=None)
 
         # output = [batch size, trg len, output dim]
         # attention = [batch size, n heads, trg len, src len]
