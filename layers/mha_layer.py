@@ -11,6 +11,7 @@ class MultiHeadAttentionLayer(nn.Module):
         assert hid_dim % n_heads == 0
 
         self.hid_dim = hid_dim
+        self.k_dim = 9
         self.n_heads = n_heads
         self.head_dim = hid_dim // n_heads
 
@@ -46,9 +47,9 @@ class MultiHeadAttentionLayer(nn.Module):
 
         ### EXPERIMENTAL SVD COMPRESSION
 
-        Q = torch_svd_low_rank_compress(Q, 5, "cuda")
-        K = torch_svd_low_rank_compress(K, 5, "cuda")
-        V = torch_svd_low_rank_compress(V, 5, "cuda")
+        Q = torch_svd_low_rank_compress(Q, 6, "cpu")
+        K = torch_svd_low_rank_compress(K, 6, "cpu")
+        V = torch_svd_low_rank_compress(V, 6, "cpu")
 
         print(f'compressed query shape: {Q.shape}')
         print(f'compressed key shape: {K.shape}')
@@ -58,35 +59,28 @@ class MultiHeadAttentionLayer(nn.Module):
         # compressed_key = [batch size, key len, hid dim] ; key len = hid dim
         # compressed_value = [batch size, value len, hid dim] ; value len = hid dim
 
-        Q = Q.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
-        K = K.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
-        V = V.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
+        Q = Q.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
+        K = K.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
+        V = V.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
 
         # Q = [batch size, n heads, query len, head dim]
         # K = [batch size, n heads, key len, head dim]
         # V = [batch size, n heads, value len, head dim]
 
+        print(f'reshaped Q shape: {Q.shape}')
+        print(f'reshaped K shape: {K.shape}')
+        print(f'reshaped V shape: {V.shape}')
+
         energy = torch.matmul(Q, K.permute(0, 1, 3, 2)) / self.scale
 
         # energy = [batch size, n heads, query len, key len]
 
-        # print(f'tensor before mask: {energy.shape}')
+        print(f'tensor before mask: {energy.shape}')
 
         if mask is not None:
             energy = energy.masked_fill(mask == 0, -1e10)
 
-        # print(f'tensor after mask (energy): {energy.shape}')
-
-        ### EXPERIMENTAL SVD BEFORE SOFTMAX
-
-        # new_energy = []
-        # for batch in energy:
-        #     new_batch = torch_svd_compress(batch)
-        #     new_energy.append(new_batch)
-        #
-        # energy = torch.stack(new_energy)
-        #
-        # print(f'compressed energy shape: {energy.shape}')
+        print(f'tensor after mask (energy): {energy.shape}')
 
         attention = torch.softmax(energy, dim=-1)
 
