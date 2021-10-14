@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # print('*'*50)
     # print(f'∑ matrix populated with diag matrix after SVD:\n {Sigma.shape}')
     # print('*'*50)
-    print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 6).shape}')
+    print(f'the shape of the torch compressed lowrank  matrix M: {torch_svd_low_rank_compress(M, 10).shape}')
     print("*" * 50)
     # print(f"the torch compressed matrix M:\n {torch_svd_compress(A).shape}")
     # print("*" * 50)

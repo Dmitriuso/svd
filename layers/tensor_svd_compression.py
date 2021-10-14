@@ -63,3 +63,36 @@ def torch_svd_reconstruct(N, O, device):
 
     K = stack(new_tensors_list)
     return K
+
+
+def torch_svd_lowrank_reconstruct(N, q, O, device):
+    new_tensors_list = []
+
+    for i in range(N.shape[0]):
+        Q = N[i]
+        U, s, NT = svd_lowrank(Q, q)
+        U2, s2, VT = svd(Q)
+        # create m x n Sigma matrix
+        Sigma = zeros((q, Q.shape[1])).to(device)
+
+        # populate Sigma with n x n diagonal matrix
+        Sigma[: q, : q] = diag(s)
+
+        n_elements = int(s.shape[0])
+        Sigma = Sigma[:, :n_elements]
+        VT = VT[:n_elements, :]
+
+        # reconstruct
+        C = mm(Sigma, VT)
+        B = mm(O[i], C)
+        new_tensors_list.append(B)
+
+    K = stack(new_tensors_list)
+    return K
+
+A = zeros(19, 256)
+O = zeros(128, 12, 10)
+N = zeros(128, 12, 256)
+
+if __name__ == '__main__':
+    print(f'reconstructed low_rank tensor: {torch_svd_lowrank_reconstruct(N, 10, O, "cpu").shape}')

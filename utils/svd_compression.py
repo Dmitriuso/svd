@@ -1,6 +1,7 @@
 import torch
 from numpy import array, diag, ones, transpose, zeros
 from scipy.linalg import svd
+from experimental import torch_svd_low_rank_compress
 
 # define a matrix
 A = array(
@@ -10,13 +11,9 @@ A = array(
         [21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
     ]
 )
-print(f"the initial matrix A:\n {A}")
 
 # Singular-value decomposition
 U, s, VT = svd(A)
-
-print(f'SVD of the matrix A:\n {U.shape} \n{"*"*50}\n {s} \n{"*"*50}\n {VT}')
-print("*" * 150)
 
 # create m x n Sigma matrix
 Sigma = zeros((A.shape[0], A.shape[1]))
@@ -24,31 +21,18 @@ Sigma = zeros((A.shape[0], A.shape[1]))
 # populate Sigma with n x n diagonal matrix
 Sigma[: A.shape[0], : A.shape[0]] = diag(s)
 
-print(f"∑ matrix populated with diag matrix after SVD:\n {Sigma}")
-print("*" * 150)
-
 # select
 n_elements = 2
 Sigma = Sigma[:, :n_elements]
-print(f"∑ matrix with n elements selected:\n {Sigma}")
-print("*" * 150)
 
 VT = VT[:n_elements, :]
 
-print(f"3rd SVD matrix with n elements selected:\n {VT}")
-print("*" * 150)
-
 # reconstruct
 B = U.dot(Sigma.dot(VT))
-print(f"the reconstructed matrix:\n {B}")
 
 # transform
 T = U.dot(Sigma)
-print(f"first transformed B matrix:\n {T}")
-
 T = A.dot(VT.T)
-
-print(f"second transformed B matrix:\n {T}")
 
 
 def svd_compress(A):
@@ -82,10 +66,14 @@ def vital_svd_compress(A):
     return P
 
 
-D = ones((128, 17, 256))
+D = torch.ones((17, 256))
 
 
 if __name__ == "__main__":
+    print(f'shape of a vector: {D[1].shape}')
+    print('*'*50)
+    # print(f'vector:\n {D[0]}')
     # print('*'*50)
-    # print(f'checking the SVD compression function:\n {svd_compress(D).shape}')
-    svd_compress(A)
+    # print(f'SVD compressed matrix shape: {svd_compress(D).shape}')
+    # print('*'*50)
+    print(f'Low rank SVD matrices shapes: {[i.shape for i in torch.svd_lowrank(D, 10)]}')

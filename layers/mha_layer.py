@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-
-from layers.tensor_svd_compression import torch_svd_compress, torch_svd_low_rank_compress, torch_svd_reconstruct
+from math import ceil
+from layers.tensor_svd_compression import torch_svd_compress, torch_svd_low_rank_compress, torch_svd_reconstruct, torch_svd_lowrank_reconstruct
 
 
 class MultiHeadAttentionLayer(nn.Module):
@@ -47,9 +47,9 @@ class MultiHeadAttentionLayer(nn.Module):
 
         ### EXPERIMENTAL SVD COMPRESSION
 
-        Q = torch_svd_compress(Q)
-        K = torch_svd_compress(K)
-        V = torch_svd_compress(V)
+        Q = torch_svd_low_rank_compress(Q, 8, "cuda")
+        K = torch_svd_low_rank_compress(K, 8, "cuda")
+        V = torch_svd_low_rank_compress(V, 8, "cuda")
 
         print(f'compressed query shape: {Q.shape}')
         print(f'compressed key shape: {K.shape}')
@@ -59,9 +59,19 @@ class MultiHeadAttentionLayer(nn.Module):
         # compressed_key = [batch size, key len, hid dim] ; key len = hid dim
         # compressed_value = [batch size, value len, hid dim] ; value len = hid dim
 
-        Q = Q.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
-        K = K.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
-        V = V.view(batch_size, -1, self.n_heads, self.k_dim).permute(0, 2, 1, 3)
+        k_q_head_dim = int(ceil((Q.shape[1] * Q.shape[2]) / self.n_heads))
+        k_k_head_dim = int(ceil((K.shape[1] * K.shape[2]) / self.n_heads))
+        k_v_head_dim = int(ceil((V.shape[1] * V.shape[2]) / self.n_heads))
+        #
+        # k_head_dim = int(head_dim // 2)
+        print(f'k Q head dim: {k_q_head_dim}')
+        print(f'k K head dim: {k_q_head_dim}')
+        print(f'k V head dim: {k_q_head_dim}')
+
+
+        Q = Q.view(batch_size, -1, self.n_heads, k_q_head_dim).permute(0, 2, 1, 3)
+        K = K.view(batch_size, -1, self.n_heads, k_k_head_dim).permute(0, 2, 1, 3)
+        V = V.view(batch_size, -1, self.n_heads, k_v_head_dim).permute(0, 2, 1, 3)
 
         # Q = [batch size, n heads, query len, head dim]
         # K = [batch size, n heads, key len, head dim]
@@ -70,6 +80,8 @@ class MultiHeadAttentionLayer(nn.Module):
         print(f'reshaped Q shape: {Q.shape}')
         print(f'reshaped K shape: {K.shape}')
         print(f'reshaped V shape: {V.shape}')
+
+        print(f'permuted K shape: {K.permute(0, 1, 3, 2).shape}')
 
         energy = torch.matmul(Q, K.permute(0, 1, 3, 2)) / self.scale
 
@@ -98,13 +110,15 @@ class MultiHeadAttentionLayer(nn.Module):
 
         print(f'x matrix contiguous shape: {x.shape}')
 
-        x = x.view(batch_size, -1, 12)
+        x = x.view(batch_size, -1, 8)
 
         # x = [batch size, query len, hid dim]
 
         print(f'x matrix shape after squeezing: {x.shape}')
 
-        x = torch_svd_reconstruct(self.fc_q(query), x, "cuda")
+        ### SVD matrix reconstruction
+
+        x = torch_svd_lowrank_reconstruct(self.fc_q(query), 8, x, "cuda")
 
         # x = [batch size, query len, hid dim]
 

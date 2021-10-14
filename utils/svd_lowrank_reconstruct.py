@@ -14,28 +14,29 @@ from torch import (
 from torch.linalg import svd
 
 # define a matrix
-A = zeros(12, 256)
-O = zeros(12, 12)
-N = zeros(128, 12, 256)
+A = zeros(19, 256)
+O = zeros(19, 10)
+N = zeros(128, 19, 256)
 
 G = N[1]
 
-low_rank = 6
+low_rank = 10
 
 new_tensors_list = []
 
 for i in N:
-    U, s, VT = svd(i)
+    U, s, NT = svd_lowrank(i, low_rank)
+    U2, s2, VT = svd(i)
     print(f"U matrix shape: {U.shape}")
     print(f"s matrix shape: {s.shape}")
     print(f"VT first shape: {VT.shape}")
 
     # create m x n Sigma matrix
-    Sigma = zeros((i.shape[0], i.shape[1]))
+    Sigma = zeros((low_rank, i.shape[1]))
     print(f"Sigma matrix first shape: {Sigma.shape}")
 
     # populate Sigma with n x n diagonal matrix
-    Sigma[: i.shape[0], : i.shape[0]] = diag(s)
+    Sigma[: low_rank, : low_rank] = diag(s)
     print(f"Sigma matrix second shape: {Sigma.shape}")
 
     n_elements = int(s.shape[0])
@@ -49,7 +50,7 @@ for i in N:
     C = mm(Sigma, VT)
     print(f'C matrix shape: {C.shape}')
     B = mm(O, C)
-    print(f'shape of output matrix B: {B.shape}')
+    print(f'output matrix B shape: {B.shape}')
     new_tensors_list.append(B)
 
 K = stack(new_tensors_list)
